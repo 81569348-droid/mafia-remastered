@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mafia Remastered - Playable Web Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        mafia: {
+                            red: '#FF1744',
+                            crimson: '#D50000',
+                            dark: '#08080C',
+                            card: '#12131A',
+                            accent: '#00E5FF',
+                            muted: '#9E9E9E',
+                            gold: '#FFD700',
+                            purple: '#A855F7',
+                            emerald: '#10B981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Cinzel', 'serif']
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'shake': 'shake 0.5s ease-in-out',
+                        'spotlight': 'spotlight 1.5s ease-out'
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(255, 23, 68, 0.4)' },
+                            '50%': { boxShadow: '0 0 30px rgba(255, 23, 68, 0.8)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' }
+                        },
+                        shake: {
+                            '0%, 100%': { transform: 'translateX(0)' },
+                            '20%, 60%': { transform: 'translateX(-8px)' },
+                            '40%, 80%': { transform: 'translateX(8px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .glow-red { box-shadow: 0 0 25px rgba(255, 23, 68, 0.4); }
+        .glow-gold { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); }
+        .glow-accent { box-shadow: 0 0 25px rgba(0, 229, 255, 0.35); }
+        .glow-emerald { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+
+        .bg-grid-pattern {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Mobile Touch Optimizations */
+        button, a, input, select {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 3D Card Flip Perspective */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: #333; rounded: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FF1744; }
+
+        /* Fog/Stars animated backdrop */
+        .stars-bg {
+            background-image: radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                              radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                              radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                              radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+        }
+    </style>
+</head>
+<body class="bg-mafia-dark text-gray-100 font-sans antialiased selection:bg-mafia-red selection:text-white min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-700" id="bodyEl">
+
+    <!-- Header / Navigation -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-mafia-dark/95 border-b border-gray-800 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center space-x-2.5 sm:space-x-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-mafia-red via-red-600 to-black flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 border border-mafia-red/50 glow-red">
+                    <i class="fa-solid fa-user-ninja text-xl text-white"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-serif text-lg sm:text-2xl font-black tracking-wider text-white">
+                        MAFIA <span class="text-mafia-red">REMASTERED</span>
+                    </span>
+                    <span class="text-[9px] text-mafia-accent font-mono tracking-widest uppercase -mt-1">Standalone Web Edition</span>
+                </div>
+            </a>
+
+            <!-- Audio Mute/Unmute Control & Status -->
+            <div class="flex items-center space-x-3">
+                <button id="btnAudioToggle" class="px-3 py-2 rounded-xl bg-black/60 border border-gray-700 hover:border-mafia-accent text-xs font-bold text-gray-300 hover:text-white flex items-center space-x-2 transition-all active:scale-95 shadow-md">
+                    <i class="fa-solid fa-volume-high text-mafia-accent" id="audioIcon"></i>
+                    <span id="audioStatusText" class="hidden sm:inline">SOUND: ON</span>
+                </button>
+
+                <!-- Room Badge Header -->
+                <div id="headerRoomBadge" class="hidden items-center space-x-2 px-3 py-1.5 rounded-xl bg-black/80 border border-mafia-red/50 text-xs font-mono glow-red">
+                    <span class="text-gray-400">ROOM:</span>
+                    <span id="headerRoomCodeVal" class="text-mafia-accent font-extrabold tracking-wider">------</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        
+        <!-- Hero Header -->
+        <section class="relative py-6 sm:py-8 bg-grid-pattern border-b border-gray-800/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+                <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-mafia-red/10 border border-mafia-red/40 text-mafia-red text-xs font-bold animate-pulse">
+                    <i class="fa-solid fa-circle text-[8px]"></i>
+                    <span>Web Audio Synthesizer Enabled • Play on Phone, Tablet & PC</span>
+                </div>
+                <h1 class="font-serif text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                    THE ULTIMATE PARTY DECEPTION GAME
+                </h1>
+            </div>
+        </section>
+
+        <!-- MAIN GAME CONTAINER SECTION -->
+        <section id="play" class="py-6 sm:py-10 relative">
+            <div class="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+                
+                <!-- Main Game Console Box -->
+                <div id="gameConsoleCard" class="bg-mafia-card rounded-2xl border-2 border-gray-800 shadow-2xl overflow-hidden transition-all duration-500 glow-red relative">
+                    
+                    <!-- Dynamic Phase Top Status Bar -->
+                    <div id="phaseTopBar" class="bg-[#181920] px-4 sm:px-6 py-4 border-b border-gray-800 flex flex-wrap items-center justify-between gap-3 transition-colors duration-500">
+                        <div class="flex items-center space-x-3">
+                            <span id="phasePulseDot" class="w-3.5 h-3.5 rounded-full bg-mafia-red animate-pulse shadow-md"></span>
+                            <span id="phaseBadge" class="font-serif font-black text-base sm:text-lg text-white tracking-wider">
+                                LOBBY GATE
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs font-mono">
+                            <span id="dayCounter" class="px-2.5 py-1 rounded bg-black/60 border border-gray-700 text-gray-300 font-bold">Lobby</span>
+                            <span id="timerBadge" class="hidden px-2.5 py-1 rounded bg-red-950/80 border border-mafia-red text-mafia-red font-black animate-pulse">
+                                ⏱️ <span id="timerVal">30</span>s
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Game View Container -->
+                    <div class="p-4 sm:p-8 min-h-[500px] flex flex-col justify-between" id="gameScreen">
+                        
+                        <!-- VIEW 0: ROOM CREATION & AVATAR SELECTION GATE -->
+                        <div id="viewRoomGate" class="space-y-6 max-w-lg mx-auto w-full">
+                            <div class="text-center space-y-2">
+                                <h2 class="font-serif text-2xl font-bold text-white">Character Setup & Room Gate</h2>
+                                <p class="text-xs text-gray-400">Pick your avatar avatar and choose your nickname</p>
+                            </div>
+
+                            <!-- Avatar Selector Grid -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400 text-center">Select Your Character Portrait</label>
+                                <div id="avatarPickerGrid" class="flex justify-center items-center space-x-3 py-2">
+                                    <!-- Dynamic SVG Avatars -->
+                                </div>
+                            </div>
+
+                            <!-- Nickname Input -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400">Player Nickname</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-user-ninja absolute left-4 top-3.5 text-mafia-red text-sm"></i>
+                                    <input type="text" id="inputPlayerName" placeholder="e.g. VitoCorleone" maxlength="14" value="Don Vito" class="w-full bg-black/70 border-2 border-gray-700 focus:border-mafia-red rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none font-bold text-sm transition-all shadow-inner">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <!-- Host New Room Card -->
+                                <div class="bg-black/40 border border-gray-800 hover:border-mafia-red p-5 rounded-xl flex flex-col justify-between space-y-4 text-center transition-all">
+                                    <div class="space-y-1">
+                                        <div class="w-12 h-12 rounded-full bg-mafia-red/20 text-mafia-red mx-auto flex items-center justify-center text-xl border border-mafia-red/40 glow-red">
+                                            <i class="fa-solid fa-crown"></i>
+                                        </div>
+                                        <h3 class="font-serif font-bold text-white text-base">Host Room</h3>
+                                        <p class="text-[11px] text-gray-400">Create a new 6-digit room code for your party</p>
+                                    </div>
+                                    <button id="btnHostRoom" class="sound-btn w-full py-3.5 rounded-xl bg-mafia-red hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all glow-red">
+                                        Create Room
+                                    </button>
+                                </div>
+
+                                <!-- Join Room Card -->
+                                <div class="bg-black/40 border border-gray-800 hover:border-mafia-accent p-5 rounded-xl flex flex-col justify-between space-y-4 text-center transition-all">
+                                    <div class="space-y-1">
+                                        <div class="w-12 h-12 rounded-full bg-cyan-950 text-mafia-accent mx-auto flex items-center justify-center text-xl border border-cyan-800/40 glow-accent">
+                                            <i class="fa-solid fa-key"></i>
+                                        </div>
+                                        <h3 class="font-serif font-bold text-white text-base">Join Room</h3>
+                                        <p class="text-[11px] text-gray-400">Enter code provided by the room host</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <input type="text" id="inputRoomCode" placeholder="MAFIA-7X9K" maxlength="10" class="w-full bg-black/80 border border-gray-700 focus:border-mafia-accent rounded-xl py-2 px-3 text-center uppercase tracking-widest font-mono text-white text-sm focus:outline-none">
+                                        <button id="btnJoinRoom" class="sound-btn w-full py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all">
+                                            Join Room
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 1: ACTIVE LOBBY VIEW -->
+                        <div id="viewLobby" class="hidden space-y-6">
+                            <!-- Room Header Code Bar -->
+                            <div class="bg-black/60 border border-gray-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-inner">
+                                <div class="flex items-center space-x-3">
+                                    <div class="px-4 py-1.5 bg-mafia-red/20 border-2 border-mafia-red rounded-xl text-mafia-red font-mono font-black text-lg tracking-wider glow-red" id="roomCodeDisplay">
+                                        MAFIA-7X9K
+                                    </div>
+                                    <button id="btnCopyCode" class="sound-btn px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold flex items-center space-x-1.5 active:scale-95 transition-all">
+                                        <i class="fa-solid fa-copy text-mafia-accent"></i>
+                                        <span id="copyBtnText">Copy Link</span>
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-300 font-mono flex items-center space-x-2">
+                                    <i class="fa-solid fa-users text-mafia-accent"></i>
+                                    <span>Lobby: <strong id="lobbyPlayerCount" class="text-white text-sm">1 / 8</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Joined Players Grid with Avatars -->
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-xs font-bold uppercase text-gray-400 px-1">
+                                    <span>Joined Party Members</span>
+                                    <span id="hostNotice" class="text-mafia-accent">You are Room Host</span>
+                                </div>
+                                <div id="lobbyPlayersGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <!-- Dynamic Player Cards with SVG Portraits -->
+                                </div>
+                            </div>
+
+                            <!-- AI Bot Filler & Roles Deck Preview -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div class="bg-black/30 p-4 rounded-xl border border-gray-800 space-y-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase block">Quick Room Bots</span>
+                                    <p class="text-[11px] text-gray-400">Add interactive AI opponents to play immediately.</p>
+                                    <div class="flex space-x-2 pt-1">
+                                        <button id="btnAddBot" class="sound-btn flex-1 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs active:scale-95 transition-all">
+                                            + Add Bot
+                                        </button>
+                                        <button id="btnFillBots" class="sound-btn flex-1 py-2.5 rounded-xl bg-mafia-accent/10 border border-mafia-accent/40 text-mafia-accent hover:bg-mafia-accent/20 font-bold text-xs active:scale-95 transition-all">
+                                            Auto-Fill (6 Players)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="bg-black/30 p-4 rounded-xl border border-gray-800 space-y-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase block">Roles Deck Preview</span>
+                                    <div id="rolesListPreview" class="flex flex-wrap gap-1.5 pt-1">
+                                        <!-- Dynamic Roles Badges -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lobby Actions -->
+                            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                                <button id="btnLeaveRoom" class="sound-btn sm:w-1/3 py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-sm active:scale-95 transition-all">
+                                    Leave Room
+                                </button>
+                                <button id="btnStartGame" class="sound-btn sm:w-2/3 py-4 rounded-xl bg-mafia-red hover:bg-red-700 text-white font-serif font-black text-lg shadow-xl glow-red active:scale-95 transition-all">
+                                    <i class="fa-solid fa-play mr-2"></i> START MATCH
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 2: INTERACTIVE SECRET ROLE REVEAL (FLIP CARD) -->
+                        <div id="viewRoleReveal" class="hidden space-y-6 text-center">
+                            <div class="space-y-1">
+                                <span class="text-xs text-mafia-accent font-extrabold uppercase tracking-widest" id="revealPlayerTitle">Player 1's Turn</span>
+                                <h3 class="font-serif text-2xl font-black text-white">Secret Role Assignment</h3>
+                                <p class="text-xs text-gray-400">Click card to reveal role (Keep hidden from others!)</p>
+                            </div>
+
+                            <!-- Flip Card Container -->
+                            <div class="w-64 h-84 mx-auto perspective-1000 cursor-pointer group" id="roleCardContainer">
+                                <div id="roleCardInner" class="w-full h-full relative transform-style-3d transition-transform duration-700 rounded-2xl border-2 border-mafia-red/60 shadow-2xl bg-black flex items-center justify-center">
+                                    <!-- Front Cover Side -->
+                                    <div class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#1F2833] via-black to-[#0B0C10] rounded-2xl border-2 border-mafia-red/40 glow-red">
+                                        <div class="w-20 h-20 rounded-full bg-mafia-red/20 flex items-center justify-center text-mafia-red text-4xl mb-4 border border-mafia-red/50 animate-pulse">
+                                            <i class="fa-solid fa-user-ninja"></i>
+                                        </div>
+                                        <h4 class="font-serif text-xl font-bold text-white mb-1">MAFIA REMASTERED</h4>
+                                        <span class="text-xs text-mafia-accent font-bold animate-bounce">Click to Flip Card 🔄</span>
+                                    </div>
+                                    <!-- Back Role Side -->
+                                    <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#2a080c] via-black to-[#0B0C10] rounded-2xl border-2 border-mafia-red">
+                                        <div id="cardRoleIcon" class="w-20 h-20 mb-3 flex items-center justify-center"></div>
+                                        <h4 id="cardRoleName" class="font-serif text-2xl font-black text-white mb-1">Godfather</h4>
+                                        <span id="cardRoleTeam" class="text-xs px-3 py-0.5 rounded-full font-bold mb-3 border">Mafia Team</span>
+                                        <p id="cardRoleDesc" class="text-xs text-gray-300 leading-relaxed">Leads the Mafia night kill and appears innocent to the Detective.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="btnConfirmRole" class="sound-btn px-8 py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-sm shadow-lg active:scale-95 transition-all mx-auto block">
+                                Next Step <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+
+                        <!-- VIEW 3: NIGHT ACTION PHASE (DARK NEON NIGHT THEME) -->
+                        <div id="viewNight" class="hidden space-y-6">
+                            <div class="text-center space-y-2">
+                                <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold animate-pulse">
+                                    <i class="fa-solid fa-moon"></i>
+                                    <span id="nightRoleStepTitle">Night Phase</span>
+                                </div>
+                                <h3 id="nightRolePromptTitle" class="font-serif text-2xl font-black text-white">Mafia Action</h3>
+                                <p id="nightRolePromptDesc" class="text-xs text-gray-400">Select target for elimination</p>
+                            </div>
+
+                            <!-- Interactive Target Grid with Player Avatars -->
+                            <div id="nightTargetsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
+                                <!-- Target Cards -->
+                            </div>
+
+                            <!-- Detective Inspection Result Feedback -->
+                            <div id="detectiveFeedback" class="hidden bg-cyan-950/80 border-2 border-mafia-accent p-4 rounded-xl text-center space-y-1 max-w-lg mx-auto glow-accent">
+                                <span class="text-xs text-mafia-accent font-bold uppercase tracking-widest">Investigation Intelligence</span>
+                                <div id="detectiveFeedbackText" class="text-base font-serif font-black text-white">Target alignment: TOWN</div>
+                            </div>
+
+                            <button id="btnConfirmNightAction" disabled class="sound-btn w-full max-w-lg mx-auto py-3.5 rounded-xl bg-mafia-red opacity-50 cursor-not-allowed hover:bg-red-700 text-white font-bold text-sm shadow-lg transition-all block glow-red">
+                                Confirm Secret Action
+                            </button>
+                        </div>
+
+                        <!-- VIEW 4: DAY PHASE (TOWN ASSEMBLY & DRAMATIC VOTING) -->
+                        <div id="viewDay" class="hidden space-y-6">
+                            <div class="text-center space-y-2">
+                                <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold animate-pulse">
+                                    <i class="fa-solid fa-sun"></i>
+                                    <span>Day Phase - Town Assembly</span>
+                                </div>
+                                <h3 class="font-serif text-2xl font-black text-white">Trial Discussion & Lynch Voting</h3>
+                            </div>
+
+                            <!-- Night News Bulletin Banner -->
+                            <div id="nightNewsReport" class="bg-black/60 border-2 border-gray-800 p-4 rounded-xl text-center space-y-1 max-w-lg mx-auto shadow-xl">
+                                <span class="text-xs text-mafia-red font-bold uppercase tracking-widest">Morning Dispatch</span>
+                                <p id="nightNewsText" class="text-sm text-gray-200 font-semibold">A peaceful night! Nobody was killed.</p>
+                            </div>
+
+                            <!-- Live Dynamic Voting Grid with Avatar Badges -->
+                            <div class="space-y-3 max-w-lg mx-auto">
+                                <div class="flex items-center justify-between text-xs font-bold uppercase text-gray-400">
+                                    <span>Cast Vote to Lynch Suspect</span>
+                                    <span class="text-amber-400">1 Vote per player</span>
+                                </div>
+                                <div id="dayVoteGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <!-- Vote Buttons -->
+                                </div>
+                            </div>
+
+                            <button id="btnConfirmVote" disabled class="sound-btn w-full max-w-lg mx-auto py-3.5 rounded-xl bg-amber-500 opacity-50 cursor-not-allowed hover:bg-amber-600 text-black font-serif font-black text-base shadow-lg transition-all block glow-gold">
+                                Cast Official Vote
+                            </button>
+                        </div>
+
+                        <!-- VIEW 5: GAME OVER & VICTORY BANNER -->
+                        <div id="viewGameOver" class="hidden space-y-6 text-center">
+                            <div id="winIconContainer" class="w-24 h-24 rounded-full bg-mafia-red/20 border-2 border-mafia-red flex items-center justify-center text-mafia-red text-5xl mx-auto glow-red animate-float">
+                                <i class="fa-solid fa-trophy" id="winIcon"></i>
+                            </div>
+
+                            <div class="space-y-2">
+                                <h2 id="winTitle" class="font-serif text-3xl sm:text-4xl font-black text-white">TOWN WINS!</h2>
+                                <p id="winDesc" class="text-xs sm:text-sm text-gray-400 max-w-md mx-auto">All Mafia members have been successfully eliminated from the town.</p>
+                            </div>
+
+                            <!-- Full Role Summary List with Avatars -->
+                            <div class="bg-black/50 border border-gray-800 p-4 rounded-xl max-w-md mx-auto text-left space-y-2">
+                                <span class="text-xs font-bold text-gray-400 uppercase block mb-2 border-b border-gray-800 pb-1">Final Player Roles & Avatars</span>
+                                <div id="finalRolesSummary" class="space-y-2 text-xs font-mono">
+                                    <!-- Summary rendered here -->
+                                </div>
+                            </div>
+
+                            <button id="btnRestartLobby" class="sound-btn px-8 py-4 rounded-xl bg-mafia-red hover:bg-red-700 text-white font-serif font-black text-lg shadow-xl glow-red active:scale-95 transition-all mx-auto block">
+                                <i class="fa-solid fa-rotate-left mr-2"></i> Return to Lobby
+                            </button>
+                        </div>
+
+                        <!-- DYNAMIC GAME EVENTS LOG CONTAINER -->
+                        <div class="mt-6 pt-4 border-t border-gray-800/80">
+                            <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+                                <span class="font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-scroll text-mafia-accent"></i>
+                                    <span>Live Game Events Feed</span>
+                                </span>
+                                <span id="logCounter" class="font-mono text-[10px]">0 Events</span>
+                            </div>
+                            <div id="gameLog" class="bg-black/80 border border-gray-800 rounded-xl p-3 h-28 overflow-y-auto font-mono text-xs space-y-1 text-gray-300 shadow-inner">
+                                <div class="text-gray-500 italic">Game console initialized. Audio Web Synth ready.</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- GAME ROLES GUIDE SECTION WITH AVATARS -->
+        <section id="roles" class="py-12 sm:py-16 bg-mafia-dark/80 border-t border-gray-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12 space-y-2">
+                    <span class="text-mafia-accent text-xs font-bold uppercase tracking-widest">Character Roster</span>
+                    <h2 class="font-serif text-3xl font-black text-white">Roles & Portrait Gallery</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4" id="rolesGalleryGrid">
+                    <!-- Dynamically Populated Role Cards -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-gray-800/80 py-8 text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="font-serif font-black text-white text-sm">MAFIA Remastered</span>
+                <span>&copy; Standalone Web Edition. Touch & Audio Synthesizer Integrated.</span>
+            </div>
+            <div class="flex space-x-4 text-gray-400">
+                <a href="#play" class="hover:text-mafia-red font-bold">Play Game</a>
+                <a href="#roles" class="hover:text-mafia-red font-bold">Role Gallery</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- GAME ENGINE & SYNTHESIZER SCRIPT -->
+    <script>
+        // --- WEB AUDIO API SYNTHESIZER (No external sound files required!) ---
+        class WebAudioSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playNightSound() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.8);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.8);
+            }
+
+            playDaySound() {
+                if (this.muted) return;
+                this.init();
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C major chord chime
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + (idx * 0.08));
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime + (idx * 0.08));
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + (idx * 0.08) + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + (idx * 0.08));
+                    osc.stop(this.ctx.currentTime + (idx * 0.08) + 0.4);
+                });
+            }
+
+            playGunshot() {
+                if (this.muted) return;
+                this.init();
+                // Noise burst for gunshot impact
+                const bufferSize = this.ctx.sampleRate * 0.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playHeal() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playInvestigate() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(554.37, this.ctx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.35);
+            }
+
+            playTicking() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.02);
+            }
+
+            playVictory() {
+                if (this.muted) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + (idx * 0.12));
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + (idx * 0.12));
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (idx * 0.12) + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + (idx * 0.12));
+                    osc.stop(this.ctx.currentTime + (idx * 0.12) + 0.5);
+                });
+            }
+        }
+
+        const synth = new WebAudioSynth();
+
+        // Audio Mute Toggle Button
+        const btnAudioToggle = document.getElementById('btnAudioToggle');
+        const audioIcon = document.getElementById('audioIcon');
+        const audioStatusText = document.getElementById('audioStatusText');
+
+        btnAudioToggle.addEventListener('click', () => {
+            synth.muted = !synth.muted;
+            if (synth.muted) {
+                audioIcon.className = 'fa-solid fa-volume-xmark text-gray-500';
+                audioStatusText.textContent = 'SOUND: OFF';
+            } else {
+                audioIcon.className = 'fa-solid fa-volume-high text-mafia-accent';
+                audioStatusText.textContent = 'SOUND: ON';
+                synth.playClick();
+            }
+        });
+
+        // Add sound to all buttons with .sound-btn
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.sound-btn')) {
+                synth.playClick();
+            }
+        });
+
+        // --- SVG CHARACTER PORTRAITS & AVATARS ---
+        const AVATAR_SVGS = [
+            // Godfather Boss (Hat & Cigar)
+            `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full border-2 border-mafia-red bg-black p-1 shadow-lg">
+                <circle cx="50" cy="50" r="45" fill="#181920"/>
+                <!-- Fedora Hat -->
+                <path d="M20 38 Q50 20 80 38 L88 42 Q50 35 12 42 Z" fill="#D50000"/>
+                <path d="M28 36 Q50 22 72 36 L70 24 Q50 16 30 24 Z" fill="#111"/>
+                <!-- Sunglasses -->
+                <rect x="26" y="46" width="20" height="12" rx="3" fill="#000" stroke="#FF1744" stroke-width="1.5"/>
+                <rect x="54" y="46" width="20" height="12" rx="3" fill="#000" stroke="#FF1744" stroke-width="1.5"/>
+                <line x1="46" y1="52" x2="54" y2="52" stroke="#FF1744" stroke-width="2"/>
+                <!-- Suit & Tie -->
+                <path d="M25 90 L42 65 L50 72 L58 65 L75 90 Z" fill="#111" stroke="#D50000" stroke-width="1"/>
+                <polygon points="50,72 46,88 50,92 54,88" fill="#D50000"/>
+            </svg>`,
+
+            // Mafia Goon (Shadow Mask)
+            `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full border-2 border-red-900 bg-black p-1 shadow-lg">
+                <circle cx="50" cy="50" r="45" fill="#0f0f14"/>
+                <circle cx="50" cy="45" r="22" fill="#262633"/>
+                <!-- Mask -->
+                <path d="M30 42 Q50 38 70 42 L68 56 Q50 64 32 56 Z" fill="#FF1744"/>
+                <!-- Glowing eyes -->
+                <circle cx="40" cy="48" r="3" fill="#fff"/>
+                <circle cx="60" cy="48" r="3" fill="#fff"/>
+                <!-- Trench Coat Collar -->
+                <path d="M20 90 L35 62 L50 70 L65 62 L80 90 Z" fill="#1a1a24"/>
+            </svg>`,
+
+            // Doctor (Stethoscope & Surgical Mask)
+            `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full border-2 border-emerald-500 bg-black p-1 shadow-lg">
+                <circle cx="50" cy="50" r="45" fill="#062016"/>
+                <circle cx="50" cy="42" r="20" fill="#f5d0a9"/>
+                <!-- Surgical Cap -->
+                <path d="M28 38 Q50 18 72 38 Z" fill="#10B981"/>
+                <!-- Surgical Mask -->
+                <rect x="32" y="46" width="36" height="16" rx="4" fill="#10B981"/>
+                <!-- Doctor Coat & Stethoscope -->
+                <path d="M20 90 L35 64 L65 64 L80 90 Z" fill="#ffffff"/>
+                <path d="M35 64 Q50 80 65 64" fill="none" stroke="#333" stroke-width="3"/>
+                <circle cx="50" cy="74" r="5" fill="#FFD700"/>
+            </svg>`,
+
+            // Detective (Magnifying Glass & Trench Hat)
+            `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full border-2 border-cyan-400 bg-black p-1 shadow-lg">
+                <circle cx="50" cy="50" r="45" fill="#051c24"/>
+                <circle cx="50" cy="44" r="20" fill="#e8c39e"/>
+                <!-- Detective Hat -->
+                <path d="M22 36 Q50 20 78 36 L84 40 Q50 32 16 40 Z" fill="#00E5FF"/>
+                <path d="M30 34 Q50 22 70 34 L68 22 Q50 14 32 22 Z" fill="#0a3d4f"/>
+                <!-- Magnifying Glass -->
+                <circle cx="62" cy="55" r="12" fill="none" stroke="#00E5FF" stroke-width="3"/>
+                <line x1="71" y1="64" x2="82" y2="75" stroke="#00E5FF" stroke-width="4"/>
+                <!-- Coat -->
+                <path d="M20 90 L38 64 L62 64 L80 90 Z" fill="#0a3d4f"/>
+            </svg>`,
+
+            // Villager Townsfolk
+            `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full border-2 border-gray-600 bg-black p-1 shadow-lg">
+                <circle cx="50" cy="50" r="45" fill="#1a1c23"/>
+                <circle cx="50" cy="44" r="22" fill="#fcd5ce"/>
+                <!-- Friendly Hair -->
+                <path d="M28 40 Q50 15 72 40 Q65 24 50 24 Q35 24 28 40 Z" fill="#5c3d2e"/>
+                <!-- Friendly Smile -->
+                <circle cx="40" cy="42" r="3" fill="#333"/>
+                <circle cx="60" cy="42" r="3" fill="#333"/>
+                <path d="M42 54 Q50 62 58 54" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Casual Clothes -->
+                <path d="M22 90 L38 66 L62 66 L78 90 Z" fill="#4a5568"/>
+            </svg>`
+        ];
+
+        let selectedAvatarIdx = 0;
+
+        function renderAvatarPicker() {
+            const pickerGrid = document.getElementById('avatarPickerGrid');
+            pickerGrid.innerHTML = AVATAR_SVGS.map((svg, idx) => `
+                <button type="button" data-idx="${idx}" class="avatar-select-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full transition-all duration-300 ${selectedAvatarIdx === idx ? 'scale-110 glow-red ring-4 ring-mafia-red' : 'opacity-60 hover:opacity-100'}">
+                    ${svg}
+                </button>
+            `).join('');
+
+            document.querySelectorAll('.avatar-select-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    synth.playClick();
+                    selectedAvatarIdx = parseInt(btn.getAttribute('data-idx'));
+                    renderAvatarPicker();
+                });
+            });
+        }
+        renderAvatarPicker();
+
+        // --- GAME ROLES DEFINITION DATA ---
+        const ROLES = {
+            GODFATHER: {
+                name: 'Godfather',
+                team: 'Mafia',
+                teamClass: 'bg-mafia-red/20 text-red-400 border-mafia-red/40',
+                svg: AVATAR_SVGS[0],
+                desc: 'Leader of the Mafia. Performs night kills. Appears innocent (Town) to Detective inspections.'
+            },
+            MAFIA: {
+                name: 'Mafia',
+                team: 'Mafia',
+                teamClass: 'bg-mafia-red/20 text-red-400 border-mafia-red/40',
+                svg: AVATAR_SVGS[1],
+                desc: 'Standard Mafia member. Votes with the Godfather on night kills.'
+            },
+            DOCTOR: {
+                name: 'Doctor',
+                team: 'Town',
+                teamClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                svg: AVATAR_SVGS[2],
+                desc: 'Saves one player each night from attack. Can protect self.'
+            },
+            DETECTIVE: {
+                name: 'Detective',
+                team: 'Town',
+                teamClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+                svg: AVATAR_SVGS[3],
+                desc: 'Investigates one player per night to discover their alignment.'
+            },
+            VILLAGER: {
+                name: 'Villager',
+                team: 'Town',
+                teamClass: 'bg-gray-700 text-gray-300 border-gray-600',
+                svg: AVATAR_SVGS[4],
+                desc: 'Innocent town member with daytime voting power.'
+            }
+        };
+
+        // Render Roles Gallery Grid in footer section
+        const rolesGalleryGrid = document.getElementById('rolesGalleryGrid');
+        rolesGalleryGrid.innerHTML = Object.keys(ROLES).map(rKey => {
+            const r = ROLES[rKey];
+            return `
+                <div class="bg-mafia-card p-5 rounded-xl border border-gray-800 hover:border-mafia-red transition-all flex flex-col items-center text-center space-y-2 group">
+                    <div class="w-16 h-16 group-hover:scale-110 transition-transform duration-300">
+                        ${r.svg}
+                    </div>
+                    <div class="font-serif font-black text-white text-lg">${r.name}</div>
+                    <span class="text-[10px] px-2.5 py-0.5 rounded font-bold border ${r.teamClass}">${r.team} TEAM</span>
+                    <p class="text-xs text-gray-400 leading-relaxed">${r.desc}</p>
+                </div>
+            `;
+        }).join('');
+
+        // --- STATE MANAGEMENT ---
+        let currentRoomCode = null;
+        let isHost = false;
+        let myPlayerName = 'Don Vito';
+        let roomPlayers = []; // { id, name, isHost, ready, isAI, alive, roleKey, avatarIdx }
+        
+        let currentDay = 1;
+        let currentRevealIdx = 0;
+        let cardFlipped = false;
+        
+        // Night Phase Temporary Action Targets
+        let nightActionStep = 0;
+        let nightStepsQueue = [];
+        let selectedNightTarget = null;
+        let mafiaKillTarget = null;
+        let doctorSaveTarget = null;
+        let detectiveTarget = null;
+
+        // Day Voting Timer & State
+        let timerInterval = null;
+        let timerSeconds = 30;
+        let selectedVoteTarget = null;
+        let gameLogs = [];
+
+        // --- DOM ELEMENTS ---
+        const inputPlayerName = document.getElementById('inputPlayerName');
+        const inputRoomCode = document.getElementById('inputRoomCode');
+        const btnHostRoom = document.getElementById('btnHostRoom');
+        const btnJoinRoom = document.getElementById('btnJoinRoom');
+
+        const headerRoomBadge = document.getElementById('headerRoomBadge');
+        const headerRoomCodeVal = document.getElementById('headerRoomCodeVal');
+        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        const btnCopyCode = document.getElementById('btnCopyCode');
+        const copyBtnText = document.getElementById('copyBtnText');
+        const lobbyPlayerCount = document.getElementById('lobbyPlayerCount');
+        const hostNotice = document.getElementById('hostNotice');
+        const lobbyPlayersGrid = document.getElementById('lobbyPlayersGrid');
+        const btnAddBot = document.getElementById('btnAddBot');
+        const btnFillBots = document.getElementById('btnFillBots');
+        const btnLeaveRoom = document.getElementById('btnLeaveRoom');
+        const btnStartGame = document.getElementById('btnStartGame');
+        const rolesListPreview = document.getElementById('rolesListPreview');
+
+        const bodyEl = document.getElementById('bodyEl');
+        const gameConsoleCard = document.getElementById('gameConsoleCard');
+        const phaseTopBar = document.getElementById('phaseTopBar');
+        const phaseBadge = document.getElementById('phaseBadge');
+        const dayCounter = document.getElementById('dayCounter');
+        const timerBadge = document.getElementById('timerBadge');
+        const timerVal = document.getElementById('timerVal');
+        const gameLogEl = document.getElementById('gameLog');
+        const logCounterEl = document.getElementById('logCounter');
+
+        // View Containers
+        const viewRoomGate = document.getElementById('viewRoomGate');
+        const viewLobby = document.getElementById('viewLobby');
+        const viewRoleReveal = document.getElementById('viewRoleReveal');
+        const viewNight = document.getElementById('viewNight');
+        const viewDay = document.getElementById('viewDay');
+        const viewGameOver = document.getElementById('viewGameOver');
+
+        // Reveal Elements
+        const revealPlayerTitle = document.getElementById('revealPlayerTitle');
+        const roleCardContainer = document.getElementById('roleCardContainer');
+        const roleCardInner = document.getElementById('roleCardInner');
+        const cardRoleIcon = document.getElementById('cardRoleIcon');
+        const cardRoleName = document.getElementById('cardRoleName');
+        const cardRoleTeam = document.getElementById('cardRoleTeam');
+        const cardRoleDesc = document.getElementById('cardRoleDesc');
+        const btnConfirmRole = document.getElementById('btnConfirmRole');
+
+        // Night Elements
+        const nightRoleStepTitle = document.getElementById('nightRoleStepTitle');
+        const nightRolePromptTitle = document.getElementById('nightRolePromptTitle');
+        const nightRolePromptDesc = document.getElementById('nightRolePromptDesc');
+        const nightTargetsGrid = document.getElementById('nightTargetsGrid');
+        const detectiveFeedback = document.getElementById('detectiveFeedback');
+        const detectiveFeedbackText = document.getElementById('detectiveFeedbackText');
+        const btnConfirmNightAction = document.getElementById('btnConfirmNightAction');
+
+        // Day Elements
+        const nightNewsText = document.getElementById('nightNewsText');
+        const dayVoteGrid = document.getElementById('dayVoteGrid');
+        const btnConfirmVote = document.getElementById('btnConfirmVote');
+
+        // Game Over Elements
+        const winTitle = document.getElementById('winTitle');
+        const winDesc = document.getElementById('winDesc');
+        const winIcon = document.getElementById('winIcon');
+        const winIconContainer = document.getElementById('winIconContainer');
+        const finalRolesSummary = document.getElementById('finalRolesSummary');
+        const btnRestartLobby = document.getElementById('btnRestartLobby');
+
+        // --- HELPER FUNCTIONS ---
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for(let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return `MAFIA-${code}`;
+        }
+
+        function addLog(msg) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            gameLogs.push(`[${timestamp}] ${msg}`);
+            gameLogEl.innerHTML = gameLogs.map(log => `<div class="py-0.5">• ${log}</div>`).join('');
+            gameLogEl.scrollTop = gameLogEl.scrollHeight;
+            logCounterEl.textContent = `${gameLogs.length} Events`;
+        }
+
+        function getRoleDeck(count) {
+            if (count <= 5) return ['GODFATHER', 'DOCTOR', 'DETECTIVE', 'VILLAGER', 'VILLAGER'];
+            if (count === 6) return ['GODFATHER', 'MAFIA', 'DOCTOR', 'DETECTIVE', 'VILLAGER', 'VILLAGER'];
+            if (count === 7) return ['GODFATHER', 'MAFIA', 'DOCTOR', 'DETECTIVE', 'VILLAGER', 'VILLAGER', 'VILLAGER'];
+            return ['GODFATHER', 'MAFIA', 'DOCTOR', 'DETECTIVE', 'VILLAGER', 'VILLAGER', 'VILLAGER', 'VILLAGER'];
+        }
+
+        function updateLobbyRolesPreview() {
+            const deck = getRoleDeck(roomPlayers.length);
+            rolesListPreview.innerHTML = deck.map(rKey => {
+                const r = ROLES[rKey];
+                return `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${r.teamClass}">${r.name}</span>`;
+            }).join('');
+        }
+
+        function renderLobbyUI() {
+            lobbyPlayerCount.textContent = `${roomPlayers.length} / 8`;
+            roomCodeDisplay.textContent = currentRoomCode;
+            headerRoomCodeVal.textContent = currentRoomCode;
+
+            hostNotice.textContent = isHost ? "You are Room Host" : "Joined as Player";
+
+            lobbyPlayersGrid.innerHTML = roomPlayers.map(p => `
+                <div class="bg-black/60 border ${p.isHost ? 'border-mafia-red shadow-md' : 'border-gray-800'} p-3 rounded-xl flex flex-col items-center space-y-1 relative group">
+                    ${p.isHost ? '<span class="absolute top-1 right-2 text-[9px] font-extrabold text-mafia-red uppercase tracking-wider">Host</span>' : ''}
+                    <div class="w-12 h-12">
+                        ${AVATAR_SVGS[p.avatarIdx || 0]}
+                    </div>
+                    <span class="text-xs font-bold text-white truncate max-w-full">${p.name}</span>
+                    <span class="text-[10px] ${p.ready ? 'text-emerald-400 font-bold' : 'text-gray-500'}">${p.ready ? 'Ready' : 'Waiting'}</span>
+                </div>
+            `).join('');
+
+            updateLobbyRolesPreview();
+        }
+
+        // --- ROOM CREATION / JOINING ---
+        btnHostRoom.addEventListener('click', () => {
+            const nameInput = inputPlayerName.value.trim();
+            if (!nameInput) return;
+            myPlayerName = nameInput;
+
+            currentRoomCode = generateRoomCode();
+            isHost = true;
+
+            roomPlayers = [
+                { id: 0, name: myPlayerName, isHost: true, ready: true, isAI: false, alive: true, avatarIdx: selectedAvatarIdx }
+            ];
+
+            enterLobbyView();
+            addLog(`Room ${currentRoomCode} hosted by ${myPlayerName}.`);
+        });
+
+        btnJoinRoom.addEventListener('click', () => {
+            const nameInput = inputPlayerName.value.trim();
+            const codeInput = inputRoomCode.value.trim().toUpperCase();
+
+            if (!nameInput) return;
+            if (!codeInput || codeInput.length < 4) return;
+
+            myPlayerName = nameInput;
+            currentRoomCode = codeInput.startsWith('MAFIA-') ? codeInput : `MAFIA-${codeInput}`;
+            isHost = false;
+
+            roomPlayers = [
+                { id: 0, name: 'Don Corleone', isHost: true, ready: true, isAI: true, alive: true, avatarIdx: 0 },
+                { id: 1, name: myPlayerName, isHost: false, ready: true, isAI: false, alive: true, avatarIdx: selectedAvatarIdx },
+                { id: 2, name: 'Doctor Smith', isHost: false, ready: true, isAI: true, alive: true, avatarIdx: 2 },
+                { id: 3, name: 'Agent Shadow', isHost: false, ready: true, isAI: true, alive: true, avatarIdx: 3 },
+                { id: 4, name: 'Townie Jack', isHost: false, ready: true, isAI: true, alive: true, avatarIdx: 4 }
+            ];
+
+            enterLobbyView();
+            addLog(`Joined Room ${currentRoomCode} as ${myPlayerName}.`);
+        });
+
+        function enterLobbyView() {
+            viewRoomGate.classList.add('hidden');
+            viewLobby.classList.remove('hidden');
+            headerRoomBadge.classList.remove('hidden');
+            headerRoomBadge.classList.add('flex');
+
+            phaseBadge.textContent = 'ROOM LOBBY';
+            renderLobbyUI();
+        }
+
+        btnCopyCode.addEventListener('click', () => {
+            const fullLink = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
+            const tempInput = document.createElement('input');
+            tempInput.value = fullLink;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            copyBtnText.textContent = 'Copied Link!';
+            setTimeout(() => { copyBtnText.textContent = 'Copy Link'; }, 2000);
+        });
+
+        btnAddBot.addEventListener('click', () => {
+            if (roomPlayers.length >= 8) return;
+            const botNames = ['CyberBot', 'Alpha', 'Bravo', 'Phantom', 'Ghost', 'Spectre', 'Rogue'];
+            const nextName = botNames[roomPlayers.length % botNames.length];
+            const randomAvatar = Math.floor(Math.random() * AVATAR_SVGS.length);
+            
+            roomPlayers.push({
+                id: roomPlayers.length,
+                name: nextName,
+                isHost: false,
+                ready: true,
+                isAI: true,
+                alive: true,
+                avatarIdx: randomAvatar
+            });
+            renderLobbyUI();
+            addLog(`Bot ${nextName} joined room.`);
+        });
+
+        btnFillBots.addEventListener('click', () => {
+            const targetCount = 6;
+            const botNames = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot'];
+            while (roomPlayers.length < targetCount) {
+                const nextName = botNames[roomPlayers.length - 1] || `Bot${roomPlayers.length}`;
+                const randomAvatar = Math.floor(Math.random() * AVATAR_SVGS.length);
+                roomPlayers.push({
+                    id: roomPlayers.length,
+                    name: nextName,
+                    isHost: false,
+                    ready: true,
+                    isAI: true,
+                    alive: true,
+                    avatarIdx: randomAvatar
+                });
+            }
+            renderLobbyUI();
+            addLog(`Room auto-filled to ${roomPlayers.length} players with AI.`);
+        });
+
+        btnLeaveRoom.addEventListener('click', () => {
+            viewLobby.classList.add('hidden');
+            viewRoomGate.classList.remove('hidden');
+            headerRoomBadge.classList.add('hidden');
+            headerRoomBadge.classList.remove('flex');
+            phaseBadge.textContent = 'ROOM GATE';
+            dayCounter.textContent = 'Lobby';
+            addLog(`Left room.`);
+        });
+
+        // --- START GAME SETUP ---
+        btnStartGame.addEventListener('click', () => {
+            if (roomPlayers.length < 5) {
+                alert('At least 5 players are needed to start the game! Use "+ Add Bot" to fill slots.');
+                return;
+            }
+
+            currentDay = 1;
+            dayCounter.textContent = `Day ${currentDay}`;
+            gameLogs = [];
+            addLog(`Match launched in Room ${currentRoomCode} with ${roomPlayers.length} players.`);
+
+            // Distribute Roles
+            const deck = getRoleDeck(roomPlayers.length).sort(() => Math.random() - 0.5);
+            roomPlayers.forEach((p, idx) => {
+                p.roleKey = deck[idx];
+                p.alive = true;
+            });
+
+            // Switch to Role Reveal Phase
+            viewLobby.classList.add('hidden');
+            viewRoleReveal.classList.remove('hidden');
+            phaseBadge.textContent = 'ROLE ASSIGNMENT';
+
+            currentRevealIdx = 0;
+            setupRevealCard(currentRevealIdx);
+        });
+
+        // --- REVEAL PHASE LOGIC ---
+        function setupRevealCard(idx) {
+            cardFlipped = false;
+            roleCardInner.classList.remove('rotate-y-180');
+
+            const p = roomPlayers[idx];
+            revealPlayerTitle.textContent = `${p.name}'s Secret Role Card`;
+
+            cardRoleIcon.innerHTML = ROLES[p.roleKey].svg;
+            cardRoleName.textContent = ROLES[p.roleKey].name;
+            cardRoleTeam.textContent = ROLES[p.roleKey].team + ' Team';
+            cardRoleTeam.className = `text-xs px-3 py-0.5 rounded-full font-bold mb-3 border ${ROLES[p.roleKey].teamClass}`;
+            cardRoleDesc.textContent = ROLES[p.roleKey].desc + (p.isAI ? ' (AI Controlled)' : '');
+        }
+
+        roleCardContainer.addEventListener('click', () => {
+            synth.playClick();
+            cardFlipped = !cardFlipped;
+            if (cardFlipped) {
+                roleCardInner.classList.add('rotate-y-180');
+            } else {
+                roleCardInner.classList.remove('rotate-y-180');
+            }
+        });
+
+        btnConfirmRole.addEventListener('click', () => {
+            currentRevealIdx++;
+            if (currentRevealIdx < roomPlayers.length) {
+                setupRevealCard(currentRevealIdx);
+            } else {
+                viewRoleReveal.classList.add('hidden');
+                startNightPhase();
+            }
+        });
+
+        // --- NIGHT PHASE LOGIC ---
+        function startNightPhase() {
+            synth.playNightSound();
+
+            // Dark Neon Night Theme Styling
+            bodyEl.className = "bg-mafia-dark text-gray-100 font-sans antialiased stars-bg min-h-screen flex flex-col justify-between transition-colors duration-700";
+            gameConsoleCard.className = "bg-mafia-card rounded-2xl border-2 border-purple-900/60 shadow-2xl overflow-hidden transition-all duration-500 glow-red relative";
+            phaseTopBar.className = "bg-purple-950/60 px-4 sm:px-6 py-4 border-b border-purple-900/80 flex flex-wrap items-center justify-between gap-3";
+
+            viewNight.classList.remove('hidden');
+            phaseBadge.textContent = `NIGHT ${currentDay} PHASE 🌙`;
+            addLog(`--- Night ${currentDay} Begins ---`);
+
+            mafiaKillTarget = null;
+            doctorSaveTarget = null;
+            detectiveTarget = null;
+
+            nightStepsQueue = [];
+            const aliveMafia = roomPlayers.filter(p => p.alive && (p.roleKey === 'GODFATHER' || p.roleKey === 'MAFIA'));
+            if (aliveMafia.length > 0) nightStepsQueue.push('MAFIA_TEAM');
+
+            const doc = roomPlayers.find(p => p.alive && p.roleKey === 'DOCTOR');
+            if (doc) nightStepsQueue.push('DOCTOR');
+
+            const det = roomPlayers.find(p => p.alive && p.roleKey === 'DETECTIVE');
+            if (det) nightStepsQueue.push('DETECTIVE');
+
+            nightActionStep = 0;
+            processNextNightStep();
+        }
+
+        function processNextNightStep() {
+            detectiveFeedback.classList.add('hidden');
+            btnConfirmNightAction.disabled = true;
+            btnConfirmNightAction.classList.add('opacity-50', 'cursor-not-allowed');
+            selectedNightTarget = null;
+
+            if (nightActionStep >= nightStepsQueue.length) {
+                resolveNightPhase();
+                return;
+            }
+
+            const currentRoleStep = nightStepsQueue[nightActionStep];
+
+            if (currentRoleStep === 'MAFIA_TEAM') {
+                const mafiaPlayers = roomPlayers.filter(p => p.alive && (p.roleKey === 'GODFATHER' || p.roleKey === 'MAFIA'));
+                const hasHumanMafia = mafiaPlayers.some(p => !p.isAI);
+
+                if (hasHumanMafia) {
+                    nightRoleStepTitle.textContent = 'Mafia Action 🔪';
+                    nightRolePromptTitle.textContent = 'Select Elimination Target';
+                    nightRolePromptDesc.textContent = 'Choose a player for the Mafia to eliminate tonight.';
+                    renderNightTargetGrid(p => p.alive && p.roleKey !== 'GODFATHER' && p.roleKey !== 'MAFIA');
+                } else {
+                    const validTargets = roomPlayers.filter(p => p.alive && p.roleKey !== 'GODFATHER' && p.roleKey !== 'MAFIA');
+                    const aiChoice = validTargets[Math.floor(Math.random() * validTargets.length)];
+                    mafiaKillTarget = aiChoice ? aiChoice.id : null;
+                    nightActionStep++;
+                    processNextNightStep();
+                }
+            }
+            else if (currentRoleStep === 'DOCTOR') {
+                const docPlayer = roomPlayers.find(p => p.alive && p.roleKey === 'DOCTOR');
+
+                if (docPlayer && !docPlayer.isAI) {
+                    nightRoleStepTitle.textContent = 'Doctor Action 🩺';
+                    nightRolePromptTitle.textContent = 'Select Save Target';
+                    nightRolePromptDesc.textContent = 'Choose a player to protect from elimination tonight.';
+                    renderNightTargetGrid(p => p.alive);
+                } else {
+                    const validTargets = roomPlayers.filter(p => p.alive);
+                    const aiChoice = validTargets[Math.floor(Math.random() * validTargets.length)];
+                    doctorSaveTarget = aiChoice ? aiChoice.id : null;
+                    nightActionStep++;
+                    processNextNightStep();
+                }
+            }
+            else if (currentRoleStep === 'DETECTIVE') {
+                const detPlayer = roomPlayers.find(p => p.alive && p.roleKey === 'DETECTIVE');
+
+                if (detPlayer && !detPlayer.isAI) {
+                    nightRoleStepTitle.textContent = 'Detective Action 🔍';
+                    nightRolePromptTitle.textContent = 'Select Investigation Target';
+                    nightRolePromptDesc.textContent = 'Inspect alignment of a player (Godfather appears innocent).';
+                    renderNightTargetGrid(p => p.alive && p.id !== detPlayer.id);
+                } else {
+                    const validTargets = roomPlayers.filter(p => p.alive && p.id !== detPlayer.id);
+                    const aiChoice = validTargets[Math.floor(Math.random() * validTargets.length)];
+                    detectiveTarget = aiChoice ? aiChoice.id : null;
+                    nightActionStep++;
+                    processNextNightStep();
+                }
+            }
+        }
+
+        function renderNightTargetGrid(filterFn) {
+            const validTargets = roomPlayers.filter(filterFn);
+
+            nightTargetsGrid.innerHTML = validTargets.map(p => `
+                <button data-id="${p.id}" class="night-target-btn sound-btn p-3 rounded-xl bg-black/60 border-2 border-gray-800 hover:border-mafia-red text-white transition-all flex flex-col items-center justify-center space-y-1.5 group">
+                    <div class="w-10 h-10 group-hover:scale-110 transition-transform">
+                        ${AVATAR_SVGS[p.avatarIdx || 0]}
+                    </div>
+                    <span class="text-xs font-bold truncate max-w-full">${p.name}</span>
+                </button>
+            `).join('');
+
+            document.querySelectorAll('.night-target-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.night-target-btn').forEach(b => b.classList.remove('border-mafia-red', 'bg-mafia-red/20', 'glow-red'));
+                    btn.classList.add('border-mafia-red', 'bg-mafia-red/20', 'glow-red');
+
+                    selectedNightTarget = parseInt(btn.getAttribute('data-id'));
+                    btnConfirmNightAction.disabled = false;
+                    btnConfirmNightAction.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    const currentStep = nightStepsQueue[nightActionStep];
+                    if (currentStep === 'DETECTIVE') {
+                        synth.playInvestigate();
+                        const targetPlayer = roomPlayers.find(p => p.id === selectedNightTarget);
+                        let resultTeam = 'TOWN';
+                        if (targetPlayer.roleKey === 'MAFIA') resultTeam = 'MAFIA';
+                        
+                        detectiveFeedbackText.textContent = `${targetPlayer.name} Alignment: ${resultTeam}`;
+                        detectiveFeedbackText.className = `text-base font-serif font-black ${resultTeam === 'MAFIA' ? 'text-mafia-red' : 'text-emerald-400'}`;
+                        detectiveFeedback.classList.remove('hidden');
+                    } else if (currentStep === 'DOCTOR') {
+                        synth.playHeal();
+                    }
+                });
+            });
+        }
+
+        btnConfirmNightAction.addEventListener('click', () => {
+            const currentRoleStep = nightStepsQueue[nightActionStep];
+
+            if (currentRoleStep === 'MAFIA_TEAM') mafiaKillTarget = selectedNightTarget;
+            else if (currentRoleStep === 'DOCTOR') doctorSaveTarget = selectedNightTarget;
+            else if (currentRoleStep === 'DETECTIVE') detectiveTarget = selectedNightTarget;
+
+            nightActionStep++;
+            processNextNightStep();
+        });
+
+        // --- NIGHT RESOLUTION & DAY PHASE ---
+        function resolveNightPhase() {
+            viewNight.classList.add('hidden');
+            viewDay.classList.remove('hidden');
+
+            synth.playDaySound();
+
+            // Sunlight Daytime Theme Styling
+            bodyEl.className = "bg-amber-950/20 text-gray-100 font-sans antialiased min-h-screen flex flex-col justify-between transition-colors duration-700";
+            gameConsoleCard.className = "bg-mafia-card rounded-2xl border-2 border-amber-600/60 shadow-2xl overflow-hidden transition-all duration-500 glow-gold relative";
+            phaseTopBar.className = "bg-amber-950/80 px-4 sm:px-6 py-4 border-b border-amber-600/80 flex flex-wrap items-center justify-between gap-3";
+
+            phaseBadge.textContent = `DAY ${currentDay} ASSEMBLY ☀️`;
+
+            let killedPlayer = null;
+
+            if (mafiaKillTarget !== null) {
+                if (mafiaKillTarget === doctorSaveTarget) {
+                    addLog(`Doctor protected the attack target! Nobody died overnight.`);
+                    nightNewsText.textContent = `✨ Morning Dispatch: The Doctor saved a player overnight! Nobody died.`;
+                } else {
+                    synth.playGunshot();
+                    killedPlayer = roomPlayers.find(p => p.id === mafiaKillTarget);
+                    killedPlayer.alive = false;
+                    addLog(`💀 ${killedPlayer.name} (${ROLES[killedPlayer.roleKey].name}) was eliminated overnight!`);
+                    nightNewsText.textContent = `💀 Morning Dispatch: ${killedPlayer.name} was found dead! Role: ${ROLES[killedPlayer.roleKey].name}.`;
+                }
+            } else {
+                nightNewsText.textContent = `✨ Morning Dispatch: A quiet night passed. Nobody died.`;
+            }
+
+            if (checkWinConditions()) return;
+
+            setupDayVoting();
+        }
+
+        function setupDayVoting() {
+            btnConfirmVote.disabled = true;
+            btnConfirmVote.classList.add('opacity-50', 'cursor-not-allowed');
+            selectedVoteTarget = null;
+
+            // Start Ticking Clock Timer
+            timerBadge.classList.remove('hidden');
+            timerSeconds = 30;
+            timerVal.textContent = timerSeconds;
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                timerVal.textContent = timerSeconds;
+                if (timerSeconds <= 10 && timerSeconds > 0) {
+                    synth.playTicking();
+                }
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    autoSubmitDayVote();
+                }
+            }, 1000);
+
+            const alivePlayers = roomPlayers.filter(p => p.alive);
+
+            dayVoteGrid.innerHTML = alivePlayers.map(p => `
+                <button data-id="${p.id}" class="day-vote-btn sound-btn p-3 rounded-xl bg-black/60 border-2 border-gray-800 hover:border-amber-500 text-white transition-all flex flex-col items-center justify-center space-y-1.5 group">
+                    <div class="w-10 h-10 group-hover:scale-110 transition-transform">
+                        ${AVATAR_SVGS[p.avatarIdx || 0]}
+                    </div>
+                    <span class="text-xs font-bold truncate max-w-full">${p.name}</span>
+                </button>
+            `).join('');
+
+            document.querySelectorAll('.day-vote-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.day-vote-btn').forEach(b => b.classList.remove('border-amber-500', 'bg-amber-500/20', 'glow-gold'));
+                    btn.classList.add('border-amber-500', 'bg-amber-500/20', 'glow-gold');
+
+                    selectedVoteTarget = parseInt(btn.getAttribute('data-id'));
+                    btnConfirmVote.disabled = false;
+                    btnConfirmVote.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+            });
+        }
+
+        function autoSubmitDayVote() {
+            if (selectedVoteTarget === null) {
+                const alive = roomPlayers.filter(p => p.alive);
+                selectedVoteTarget = alive[Math.floor(Math.random() * alive.length)].id;
+            }
+            btnConfirmVote.click();
+        }
+
+        btnConfirmVote.addEventListener('click', () => {
+            if (selectedVoteTarget === null) return;
+            clearInterval(timerInterval);
+            timerBadge.classList.add('hidden');
+
+            const votes = {};
+            const alivePlayers = roomPlayers.filter(p => p.alive);
+
+            alivePlayers.forEach(p => {
+                if (p.isAI) {
+                    const validTargets = alivePlayers.filter(target => target.id !== p.id);
+                    const aiChoice = validTargets[Math.floor(Math.random() * validTargets.length)];
+                    votes[aiChoice.id] = (votes[aiChoice.id] || 0) + 1;
+                } else {
+                    votes[selectedVoteTarget] = (votes[selectedVoteTarget] || 0) + 1;
+                }
+            });
+
+            let maxVotes = 0;
+            let lynchedId = null;
+
+            for (const [pId, count] of Object.entries(votes)) {
+                if (count > maxVotes) {
+                    maxVotes = count;
+                    lynchedId = parseInt(pId);
+                }
+            }
+
+            synth.playGunshot();
+            const lynchedPlayer = roomPlayers.find(p => p.id === lynchedId);
+            lynchedPlayer.alive = false;
+            addLog(`⚖️ Town trial voted to lynch ${lynchedPlayer.name} (${ROLES[lynchedPlayer.roleKey].name}) with ${maxVotes} votes.`);
+
+            if (!checkWinConditions()) {
+                viewDay.classList.add('hidden');
+                currentDay++;
+                dayCounter.textContent = `Day ${currentDay}`;
+                startNightPhase();
+            }
+        });
+
+        // --- WIN CONDITION CHECKER ---
+        function checkWinConditions() {
+            const aliveMafia = roomPlayers.filter(p => p.alive && (p.roleKey === 'GODFATHER' || p.roleKey === 'MAFIA'));
+            const aliveTown = roomPlayers.filter(p => p.alive && (p.roleKey === 'DOCTOR' || p.roleKey === 'DETECTIVE' || p.roleKey === 'VILLAGER'));
+
+            if (aliveMafia.length === 0) {
+                showGameOver('TOWN WINS! 🏆', 'All members of the Mafia have been eliminated from the town.', 'text-emerald-400');
+                return true;
+            } else if (aliveMafia.length >= aliveTown.length) {
+                showGameOver('MAFIA WINS! 🩸', 'The Mafia has reached equal numbers with the Town.', 'text-mafia-red');
+                return true;
+            }
+            return false;
+        }
+
+        function showGameOver(title, desc, titleColorClass) {
+            clearInterval(timerInterval);
+            timerBadge.classList.add('hidden');
+
+            synth.playVictory();
+
+            viewNight.classList.add('hidden');
+            viewDay.classList.add('hidden');
+            viewGameOver.classList.remove('hidden');
+            phaseBadge.textContent = 'MATCH CONCLUDED';
+
+            winTitle.textContent = title;
+            winTitle.className = `font-serif text-3xl sm:text-4xl font-black ${titleColorClass}`;
+            winDesc.textContent = desc;
+
+            finalRolesSummary.innerHTML = roomPlayers.map(p => `
+                <div class="flex items-center justify-between py-1.5 border-b border-gray-800/80">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8">
+                            ${AVATAR_SVGS[p.avatarIdx || 0]}
+                        </div>
+                        <span class="font-bold text-white">${p.name}</span>
+                        <span class="text-[10px] ${p.alive ? 'text-emerald-400' : 'text-gray-500'}">(${p.alive ? 'Survived' : 'Dead'})</span>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded text-[10px] border ${ROLES[p.roleKey].teamClass}">${ROLES[p.roleKey].name}</span>
+                </div>
+            `).join('');
+
+            addLog(`🏆 Game Over: ${title}`);
+        }
+
+        // Restart Engine back to Lobby
+        btnRestartLobby.addEventListener('click', () => {
+            viewGameOver.classList.add('hidden');
+            viewLobby.classList.remove('hidden');
+            phaseBadge.textContent = 'ROOM LOBBY';
+            renderLobbyUI();
+        });
+    </script>
+</body>
+</html>
